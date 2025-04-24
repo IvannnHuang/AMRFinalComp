@@ -17,7 +17,7 @@ function[dataStore] = rrtPlanner1(Robot,maxTime)
 %   Cornell University
 %   MAE 5180: Autonomous Mobile Robots
 %   Homework #6
-%   Chen, Runbin
+%   Huang, Ivan
 
 defaultRuntime = 180;
 

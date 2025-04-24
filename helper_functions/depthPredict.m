@@ -21,6 +21,8 @@
 %   Cornell University
 %   Autonomous Mobile Robots
 %   Homework 2
+%   Huang, Ivan
+
 function[depth] = depthPredict(robotPose,map,sensorOrigin,angles)
 
     maxRange = 100;

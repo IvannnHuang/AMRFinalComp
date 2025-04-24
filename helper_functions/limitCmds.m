@@ -20,7 +20,8 @@ function[cmdV,cmdW] = limitCmds(fwdVel,angVel,maxV,wheel2Center)
 %   Cornell University
 %   Autonomous Mobile Robots
 %   Homework #1
-%   Chen, Runbin 
+%   Huang, Ivan
+
 cmdV = fwdVel; cmdW = angVel;
 vr = fwdVel + angVel * wheel2Center;
 vl = fwdVel - angVel * wheel2Center;

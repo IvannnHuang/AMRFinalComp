@@ -17,6 +17,7 @@
 %   Cornell University
 %   MAE 4180/5180 CS 3758: Autonomous Mobile Robots
 %   Homework #2
+%   Huang, Ivan
 
 function finalPose = integrateOdom1(initPose, d, phi)
 % Single-step motion update for one particle
