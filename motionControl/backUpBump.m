@@ -1,4 +1,4 @@
-function [dataStore] = motionControl1(Robot, maxTime)
+function [dataStore] = backUpBump(Robot, maxTime)
  % MOTIONCONTROL: Drives the robot while reacting to the bump sensor and 
  % switching between EKF (GPS or depth) and PF (depth) filtering.
  %
@@ -106,11 +106,6 @@ function [dataStore] = motionControl1(Robot, maxTime)
      [dataStore.particles, pose] = PF(dataStore.particles, delta, depth, ...
                               @integrateOdom1, @depthPredict, map, sensor_pos, n_rs_rays);
      dataStore.pose = [dataStore.pose; pose'];
-     % if (count == 30)
-     %     dataStore.particles = resetPF(dataStore.pose(end, :));
-     %     count = 0;
-     % end
-     % count = count + 1;
  
      set(traj_Plot, 'XData', [get(traj_Plot, 'XData'), dataStore.truthPose(end, 2)], 'YData', [get(traj_Plot, 'YData'), dataStore.truthPose(end, 3)]);
      set(local_Plot, 'XData', [get(local_Plot, 'XData'), dataStore.pose(end, 1)], 'YData', [get(local_Plot, 'YData'), dataStore.pose(end, 2)]);

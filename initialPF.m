@@ -1,4 +1,4 @@
-function[dataStore] = rrtPlanner(Robot,maxTime)
+function[dataStore] = initialPF(Robot,maxTime)
 % rrtPlanner
 % 
 %   dataStore = TURNINPLACE(Robot,maxTime) runs 
@@ -25,10 +25,11 @@ addpath("maps\");
 addpath("plotting\");
 addpath("helper_functions\");
 
-map = load('map1_3credits.mat').map;
+mapFile = 'map1_3credits.mat';
+map = load(mapFile).map;
 mapBoundary = calcMapBoundary(map);
 robotRadius = 0.2;
-waypoints = load('map1_3credits.mat').waypoints;
+waypoints = load(mapFile).waypoints;
 goal = waypoints(1, :);
 [px, py, ~] = OverheadLocalizationCreate(Robot);
 start = [px, py];
@@ -41,7 +42,7 @@ n_rs_rays = 10;
 sensor_pos = [0.13 0];
 
 % Initialize particle filter (PF) 
-particles = resetPF([-3.5, 1.5, deg2rad(0)]);
+particles = startPF(waypoints);
 
 fig1 = figure(1);
 % [vertex_plot, edge_plot] = plotRoadmap(V, E, fig1);
@@ -57,8 +58,6 @@ grid on;
 
 traj_Plot = plot(nan, nan, 'r-', 'LineWidth', 1.5);
 pf_Plot = plot(nan, nan, 'b-', 'LineWidth', 1.5);
-goal_plot = scatter(goal(1), goal(2), 'gx', 'LineWidth', 2);
-start_plot = scatter(start(1), start(2), 'rx', 'LineWidth', 2);
 
 xlabel('x (inertial)');
 ylabel('y (inertial)');
@@ -91,7 +90,8 @@ dataStore = struct('truthPose', [],...
                    'odometry', [], ...
                    'rsdepth', [], ...
                    'bump', [], ...
-                   'beacon', []);
+                   'beacon', [], ...
+                   'pose', []);
 
 % Variable used to keep track of whether the overhead localization "lost"
 % the robot (number of consecutive times the robot was not identified).
@@ -106,26 +106,30 @@ wheel2Center = 0.13;
 SetFwdVelAngVelCreate(Robot, 0,0);
 tic
 
-while toc < maxTime && gotopt <= length(waypoints)
+
+count = 0;
+while toc < maxTime 
+    % turn 360 degree
+    if (count < 19)
+        turnAngle(Robot, robotRadius, 10);
+        count = count + 1;
+        disp(count)
+    end
     
     % READ & STORE SENSOR DATA
     [noRobotCount, dataStore] = readStoreSensorData(Robot, noRobotCount, dataStore);
     delta = dataStore.odometry(end, 2:3)';  % distance moved
     depth = dataStore.rsdepth(end, 2:end)'; % depth reading
+    % disp(delta)
     
-    % CONTROL FUNCTION (send robot commands)
-    % if overhead localization loses the robot for too long, stop it
     if noRobotCount >= 3
         SetFwdVelAngVelCreate(Robot, 0,0);
         continue;
     end
     
-    truthPose = dataStore.truthPose(end, 2:4);
-    [fwdVel, angVel, gotopt] = visitWaypoints(waypoints, gotopt, closeEnough, truthPose, epsilon);
-    [cmdV, cmdW] = limitCmds(fwdVel, angVel, maxV, wheel2Center);
-    SetFwdVelAngVelCreate(Robot, cmdV, cmdW);
     [particles, pose] = PF(particles, delta, depth, ...
                           @integrateOdom1, @depthPredict, map, sensor_pos, n_rs_rays);
+    dataStore.pose = [dataStore.pose; pose'];
     
     [px, py, ~] = OverheadLocalizationCreate(Robot);
     set(traj_Plot, 'XData', [get(traj_Plot, 'XData'), px], 'YData', [get(traj_Plot, 'YData'), py]);
@@ -133,8 +137,5 @@ while toc < maxTime && gotopt <= length(waypoints)
     
     % pause(0.1);
 end
-
-% set forward and angular velocity to zero (stop robot) before exiting the function
 SetFwdVelAngVelCreate(Robot, 0, 0);
-
 end

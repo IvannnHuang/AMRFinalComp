@@ -43,7 +43,7 @@ for i = 1:size(measurements, 1)
         for j = 1:num_sensors
             meas = measurements(i, j);
             if ~isnan(meas)
-                global_angle = wrapTo2Pi(theta + sensor_angles(j));
+                global_angle = wrapToPi(theta + sensor_angles(j));
 
                 % Predict depth in global direction
                 predicted_depth = depthPredict([mu_t; theta], map, [0, 0], global_angle);
@@ -82,6 +82,6 @@ for i = 1:size(measurements, 1)
 end
 
 % Final estimated orientation: either last, or average if you prefer smoothing
-theta_est = wrapTo2Pi(theta_est_list(end));
+theta_est = wrapToPi(theta_est_list(end));
 
 end
