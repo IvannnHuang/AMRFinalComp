@@ -15,7 +15,7 @@
 %   Homework 4
 %   Ivan Huang
 
-function [newParticles, p1] = PF(particles, odometry, depthMea, integrateOdom1, depthPredict, map, sensorOrigin, n_rs_rays)
+function [newParticles, p1] = PF1(particles, odometry, depthMea, integrateOdom1, depthPredict, map, sensorOrigin, n_rs_rays)
 
 addpath("maps\");
 addpath("plotting\");
@@ -33,7 +33,7 @@ addpath("helper_functions\");
         pred_depth = depthPredict(particles(:, i), map, sensorOrigin, linspace(27, -27, n_rs_rays)*pi/180');
         residual = norm(pred_depth+pred_off - depthMea);
         error = sum(residual.^2);
-        sigma = 1;
+        sigma = 2;
         
         weights(i) = exp(-error / (2 * sigma^2));
         if isnan(weights(i)) || isinf(weights(i))

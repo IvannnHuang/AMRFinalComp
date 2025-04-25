@@ -34,15 +34,11 @@ goal = waypoints(1, :);
 [px, py, ~] = OverheadLocalizationCreate(Robot);
 start = [px, py];
 [V, E] = RRTwalls(map, mapBoundary, start, goal, robotRadius);
-waypoints = findPath([], V, E, start, goal);
 gotopt = 1;
 epsilon = 0.2;
 closeEnough = 0.1;
 n_rs_rays = 10;
 sensor_pos = [0.13 0];
-
-% Initialize particle filter (PF) 
-particles = startPF(waypoints);
 
 fig1 = figure(1);
 % [vertex_plot, edge_plot] = plotRoadmap(V, E, fig1);
@@ -56,8 +52,11 @@ end
 axis equal;
 grid on;
 
-traj_Plot = plot(nan, nan, 'r-', 'LineWidth', 1.5);
-pf_Plot = plot(nan, nan, 'b-', 'LineWidth', 1.5);
+% traj_Plot = plot(nan, nan, 'r-', 'LineWidth', 1.5);
+% pf_Plot = plot(nan, nan, 'b-', 'LineWidth', 1.5);
+traj_Plot = quiver(nan, nan, nan, nan, 'MaxHeadSize',2,'Color','r','LineWidth',1.5);
+pf_Plot = quiver(nan, nan, nan, nan, 'MaxHeadSize',2,'Color','b','LineWidth',1.5);
+particle_Plot = scatter(nan, nan, 50, 'r.');  % tiny red dots
 
 xlabel('x (inertial)');
 ylabel('y (inertial)');
@@ -91,7 +90,11 @@ dataStore = struct('truthPose', [],...
                    'rsdepth', [], ...
                    'bump', [], ...
                    'beacon', [], ...
+                   'particles', [], ...
                    'pose', []);
+
+% Initialize particle filter (PF) 
+dataStore.particles = startPF(waypoints);
 
 % Variable used to keep track of whether the overhead localization "lost"
 % the robot (number of consecutive times the robot was not identified).
@@ -109,33 +112,38 @@ tic
 
 count = 0;
 while toc < maxTime 
+    pause(0.1);
     % turn 360 degree
-    if (count < 19)
-        turnAngle(Robot, robotRadius, 10);
+    if (count < 20)
+        turnAngle(Robot, robotRadius, 12);
         count = count + 1;
-        disp(count)
     end
-    
+
     % READ & STORE SENSOR DATA
     [noRobotCount, dataStore] = readStoreSensorData(Robot, noRobotCount, dataStore);
     delta = dataStore.odometry(end, 2:3)';  % distance moved
     depth = dataStore.rsdepth(end, 2:end)'; % depth reading
-    % disp(delta)
-    
+
     if noRobotCount >= 3
         SetFwdVelAngVelCreate(Robot, 0,0);
         continue;
     end
-    
-    [particles, pose] = PF(particles, delta, depth, ...
+
+    [dataStore.particles, pose] = PF1(dataStore.particles, delta, depth, ...
                           @integrateOdom1, @depthPredict, map, sensor_pos, n_rs_rays);
     dataStore.pose = [dataStore.pose; pose'];
-    
-    [px, py, ~] = OverheadLocalizationCreate(Robot);
-    set(traj_Plot, 'XData', [get(traj_Plot, 'XData'), px], 'YData', [get(traj_Plot, 'YData'), py]);
-    set(pf_Plot, 'XData', [get(pf_Plot, 'XData'), pose(1, end)], 'YData', [get(pf_Plot, 'YData'), pose(2, end)]);
-    
-    % pause(0.1);
+
+    [px, py, pt] = OverheadLocalizationCreate(Robot);
+    set(traj_Plot, 'XData', px, ...
+                  'YData', py, ...
+                  'UData', 0.3*cos(pt), ...
+                  'VData', 0.3*sin(pt));
+    set(pf_Plot, 'XData', pose(1), ...
+                  'YData', pose(2), ...
+                  'UData', 0.3*cos(pose(3)), ...
+                  'VData', 0.3*sin(pose(3)));
+    set(particle_Plot, 'XData', dataStore.particles(1,:), ...
+                   'YData', dataStore.particles(2,:));
 end
 SetFwdVelAngVelCreate(Robot, 0, 0);
 end
