@@ -1,4 +1,4 @@
-function[dataStore] = initialPF(Robot,maxTime)
+function [dataStore, init_pose] = initialPF(Robot,maxTime)
 % rrtPlanner
 % 
 %   dataStore = TURNINPLACE(Robot,maxTime) runs 
@@ -52,8 +52,6 @@ end
 axis equal;
 grid on;
 
-% traj_Plot = plot(nan, nan, 'r-', 'LineWidth', 1.5);
-% pf_Plot = plot(nan, nan, 'b-', 'LineWidth', 1.5);
 traj_Plot = quiver(nan, nan, nan, nan, 'MaxHeadSize',2,'Color','r','LineWidth',1.5);
 pf_Plot = quiver(nan, nan, nan, nan, 'MaxHeadSize',2,'Color','b','LineWidth',1.5);
 particle_Plot = scatter(nan, nan, 50, 'r.');  % tiny red dots
@@ -61,63 +59,35 @@ particle_Plot = scatter(nan, nan, 50, 'r.');  % tiny red dots
 xlabel('x (inertial)');
 ylabel('y (inertial)');
 title('plot of trajectory');
+legend([walls_plot, traj_Plot, pf_Plot, particle_Plot], ...
+    {'walls', 'trajectory', 'most weight', 'particles'});
 axis equal;
 
-% Set unspecified inputs
+% Robot setup
 if nargin < 1
     disp('ERROR: TCP/IP port object not provided.');
     return;
 elseif nargin < 2
     maxTime = defaultRuntime;
 end
-
 try 
-    % When running with the real robot, we need to define the appropriate 
-    % ports. This will fail when NOT connected to a physical robot 
     CreatePort=Robot.CreatePort;
 catch
-    % If not real robot, then we are using the simulator object
     CreatePort = Robot;
 end
-
-% declare dataStore as a global variable so it can be accessed from the
-% workspace even if the program is stopped
 global dataStore;
-
-% initialize datalog struct (customize according to needs)
-dataStore = struct('truthPose', [],...
-                   'odometry', [], ...
-                   'rsdepth', [], ...
-                   'bump', [], ...
-                   'beacon', [], ...
-                   'particles', [], ...
-                   'pose', []);
-
-% Initialize particle filter (PF) 
-dataStore.particles = startPF(waypoints);
-
-% Variable used to keep track of whether the overhead localization "lost"
-% the robot (number of consecutive times the robot was not identified).
-% If the robot doesn't know where it is we want to stop it for
-% safety reasons.
+dataStore = struct('truthPose', [],'odometry', [],'rsdepth', [],'bump', [],'beacon', []);
 noRobotCount = 0;
-
 maxV = 0.2;
 wheel2Center = 0.13;
-
-
 SetFwdVelAngVelCreate(Robot, 0,0);
 tic
 
+particles = startPF(waypoints);
 
 count = 0;
-while toc < maxTime 
+while toc < maxTime && count < 19
     pause(0.1);
-    % turn 360 degree
-    if (count < 20)
-        turnAngle(Robot, robotRadius, 12);
-        count = count + 1;
-    end
 
     % READ & STORE SENSOR DATA
     [noRobotCount, dataStore] = readStoreSensorData(Robot, noRobotCount, dataStore);
@@ -129,9 +99,8 @@ while toc < maxTime
         continue;
     end
 
-    [dataStore.particles, pose] = PF1(dataStore.particles, delta, depth, ...
+    [particles, pose] = PF1(particles, delta, depth, ...
                           @integrateOdom1, @depthPredict, map, sensor_pos, n_rs_rays);
-    dataStore.pose = [dataStore.pose; pose'];
 
     [px, py, pt] = OverheadLocalizationCreate(Robot);
     set(traj_Plot, 'XData', px, ...
@@ -142,8 +111,22 @@ while toc < maxTime
                   'YData', pose(2), ...
                   'UData', 0.3*cos(pose(3)), ...
                   'VData', 0.3*sin(pose(3)));
-    set(particle_Plot, 'XData', dataStore.particles(1,:), ...
-                   'YData', dataStore.particles(2,:));
+    set(particle_Plot, 'XData', particles(1,:), ...
+                   'YData', particles(2,:));
+
+    % turn 360 degree
+    if (count < 19)
+        turnAngle(Robot, robotRadius, 11.65);
+        count = count + 1;
+    end
 end
+[px, py, pt] = OverheadLocalizationCreate(Robot);
+set(traj_Plot, 'XData', px, ...
+              'YData', py, ...
+              'UData', 0.3*cos(pt), ...
+              'VData', 0.3*sin(pt));
+
+init_pose = pose';
+
 SetFwdVelAngVelCreate(Robot, 0, 0);
 end

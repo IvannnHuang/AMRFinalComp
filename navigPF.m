@@ -25,14 +25,36 @@ function[dataStore] = navigPF(Robot,maxTime)
     addpath("plotting\");
     addpath("helper_functions\");
     
+    % Robot setup
+    if nargin < 1
+        disp('ERROR: TCP/IP port object not provided.');
+        return;
+    elseif nargin < 2
+        maxTime = defaultRuntime;
+    end
+    try 
+        CreatePort=Robot.CreatePort;
+    catch
+        CreatePort = Robot;
+    end
+    global dataStore;
+    dataStore = struct('truthPose', [],'odometry', [], 'rsdepth', [], 'bump', [], 'beacon', []);
+    noRobotCount = 0;
+    
+    maxV = 0.2;
+    wheel2Center = 0.13;
+    
+    % Navigation setup
+    % [dataStore, init_pose] = initialPF(Robot,maxTime);
+    
     map = load('map1_3credits.mat').map;
     mapBoundary = calcMapBoundary(map);
     robotRadius = 0.2;
     waypoints = load('map1_3credits.mat').waypoints;
     goal = waypoints(1, :);
-    [px, py, ~] = OverheadLocalizationCreate(Robot);
-    start = [px, py];
-    [V, E] = RRTwalls(map, mapBoundary, start, goal, robotRadius);
+    % start = init_pose;
+    start = [2.5,1.5, deg2rad(0)];
+    [V, E] = RRTwalls(map, mapBoundary, start(1:2), goal, robotRadius);
     waypoints = findPath([], V, E, start, goal);
     gotopt = 1;
     epsilon = 0.2;
@@ -41,7 +63,8 @@ function[dataStore] = navigPF(Robot,maxTime)
     sensor_pos = [0.13 0];
     
     % Initialize particle filter (PF) 
-    particles = resetPF([-3.5, 1.5, deg2rad(0)]);
+    particles = resetPF(start);
+    sigma = 0.5;
     
     fig1 = figure(1);
     % [vertex_plot, edge_plot] = plotRoadmap(V, E, fig1);
@@ -63,27 +86,9 @@ function[dataStore] = navigPF(Robot,maxTime)
     xlabel('x (inertial)');
     ylabel('y (inertial)');
     title('plot of trajectory');
+    legend([walls_plot, start_plot, goal_plot, traj_Plot, pf_Plot], ...
+        {'walls', 'start', 'goal', 'trajectory', 'most weight'});
     axis equal;
-    
-    % Robot setup
-    if nargin < 1
-        disp('ERROR: TCP/IP port object not provided.');
-        return;
-    elseif nargin < 2
-        maxTime = defaultRuntime;
-    end
-    try 
-        CreatePort=Robot.CreatePort;
-    catch
-        CreatePort = Robot;
-    end
-    global dataStore;
-    dataStore = struct('truthPose', [],'odometry', [], 'rsdepth', [], 'bump', [], 'beacon', []);
-    noRobotCount = 0;
-    
-    maxV = 0.2;
-    wheel2Center = 0.13;
-    
     
     SetFwdVelAngVelCreate(Robot, 0,0);
     tic
@@ -102,12 +107,13 @@ function[dataStore] = navigPF(Robot,maxTime)
             continue;
         end
         
-        truthPose = dataStore.truthPose(end, 2:4);
-        [fwdVel, angVel, gotopt] = visitWaypoints(waypoints, gotopt, closeEnough, truthPose, epsilon);
+        % truthPose = dataStore.truthPose(end, 2:4);
+
+        [particles, pose] = PF(particles, delta, depth, ...
+                              @integrateOdom1, @depthPredict, map, sensor_pos, n_rs_rays, sigma);
+        [fwdVel, angVel, gotopt] = visitWaypoints(waypoints, gotopt, closeEnough, pose, epsilon);
         [cmdV, cmdW] = limitCmds(fwdVel, angVel, maxV, wheel2Center);
         SetFwdVelAngVelCreate(Robot, cmdV, cmdW);
-        [particles, pose] = PF(particles, delta, depth, ...
-                              @integrateOdom1, @depthPredict, map, sensor_pos, n_rs_rays);
         
         [px, py, ~] = OverheadLocalizationCreate(Robot);
         set(traj_Plot, 'XData', [get(traj_Plot, 'XData'), px], 'YData', [get(traj_Plot, 'YData'), py]);
