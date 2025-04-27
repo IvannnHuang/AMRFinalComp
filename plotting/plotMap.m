@@ -35,19 +35,19 @@ for i = 1:size(mapData,1)
     % Draw all the required lines
     for j = 1:size(mapData,2)/2-1
         if (vx(i,j+1) == 0 && vy(i,j+1) == 0)  % Last vertex in the row-- close the loop.
-            line([vx(i,j) vx(i,1)],[vy(i,j) vy(i,1)],'LineWidth',3,'Color',[0 0 0])
+            line([vx(i,j) vx(i,1)],[vy(i,j) vy(i,1)],'LineWidth',3,'Color',[1 0 0])
             obstacleVerts{i}(j,:) = [vx(i,j) vy(i,j)];
             j = j-1;
             break
         else
-            line([vx(i,j) vx(i,j+1)],[vy(i,j) vy(i,j+1)],'LineWidth',3,'Color',[0 0 0])
+            line([vx(i,j) vx(i,j+1)],[vy(i,j) vy(i,j+1)],'LineWidth',3,'Color',[1 0 0])
             obstacleVerts{i}(j,:) = [vx(i,j) vy(i,j)];
         end
     end
     
     % If the loop hasn't been closed, do so here
     if j == size(mapData,2)/2-1
-        line([vx(i,j+1) vx(i,1)],[vy(i,j+1) vy(i,1)],'LineWidth',3,'Color',[0 0 0])
+        line([vx(i,j+1) vx(i,1)],[vy(i,j+1) vy(i,1)],'LineWidth',3,'Color',[1 0 0])
         obstacleVerts{i}(j+1,:) = [vx(i,j+1) vy(i,j+1)];
     end
     obstacleVerts{i}(end+1,:) = [vx(i,1) vy(i,1)];

@@ -1,4 +1,4 @@
-function [dataStore, init_pose] = initialPF(Robot,maxTime)
+function [dataStore, init_pose] = initialPF(Robot,maxTime, mapFile)
 % rrtPlanner
 % 
 %   dataStore = TURNINPLACE(Robot,maxTime) runs 
@@ -25,18 +25,10 @@ addpath("maps\");
 addpath("plotting\");
 addpath("helper_functions\");
 
-mapFile = 'map1_3credits.mat';
+% mapFile = 'map1_3credits.mat';
 map = load(mapFile).map;
-mapBoundary = calcMapBoundary(map);
-robotRadius = 0.2;
 waypoints = load(mapFile).waypoints;
-goal = waypoints(1, :);
-[px, py, ~] = OverheadLocalizationCreate(Robot);
-start = [px, py];
-[V, E] = RRTwalls(map, mapBoundary, start, goal, robotRadius);
-gotopt = 1;
-epsilon = 0.2;
-closeEnough = 0.1;
+robotRadius = 0.2;
 n_rs_rays = 10;
 sensor_pos = [0.13 0];
 
@@ -88,6 +80,11 @@ particles = startPF(waypoints);
 count = 0;
 while toc < maxTime && count < 19
     pause(0.1);
+    % turn 360 degree
+    if (count < 19)
+        turnAngle(Robot, robotRadius, 11.65);
+        count = count + 1;
+    end
 
     % READ & STORE SENSOR DATA
     [noRobotCount, dataStore] = readStoreSensorData(Robot, noRobotCount, dataStore);
@@ -100,7 +97,7 @@ while toc < maxTime && count < 19
     end
 
     [particles, pose] = PF1(particles, delta, depth, ...
-                          @integrateOdom1, @depthPredict, map, sensor_pos, n_rs_rays);
+                          @integrateOdom1, @depthPredict, map, sensor_pos, n_rs_rays, 2);
 
     [px, py, pt] = OverheadLocalizationCreate(Robot);
     set(traj_Plot, 'XData', px, ...
@@ -114,18 +111,7 @@ while toc < maxTime && count < 19
     set(particle_Plot, 'XData', particles(1,:), ...
                    'YData', particles(2,:));
 
-    % turn 360 degree
-    if (count < 19)
-        turnAngle(Robot, robotRadius, 11.65);
-        count = count + 1;
-    end
 end
-[px, py, pt] = OverheadLocalizationCreate(Robot);
-set(traj_Plot, 'XData', px, ...
-              'YData', py, ...
-              'UData', 0.3*cos(pt), ...
-              'VData', 0.3*sin(pt));
-
 init_pose = pose';
 
 SetFwdVelAngVelCreate(Robot, 0, 0);

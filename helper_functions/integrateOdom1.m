@@ -27,9 +27,9 @@ function finalPose = integrateOdom1(initPose, d, phi)
 
     % Add noise to motion
     d = d*(1.08 + 0.01*randn(1, 1));
-    phi = phi*(1.2 + 0.01*randn(1, 1));
-    % d = d*(1.1 + 0.01*randn(1, 1));
-    % phi = phi*(1.35 + 0.01*randn(1, 1));
+    phi = phi*(1.18 + 0.2*randn(1, 1));
+    % d = d + 0.01 * randn(1,1);   
+    % phi = phi + deg2rad(1.0) * randn(1,1); 
 
     x = initPose(1);
     y = initPose(2);

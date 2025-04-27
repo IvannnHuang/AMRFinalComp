@@ -1,4 +1,4 @@
-function[dataStore] = navigPF(Robot,maxTime)
+function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal)
 % rrtPlanner
 % 
 %   dataStore = TURNINPLACE(Robot,maxTime) runs 
@@ -25,35 +25,16 @@ function[dataStore] = navigPF(Robot,maxTime)
     addpath("plotting\");
     addpath("helper_functions\");
     
-    % Robot setup
-    if nargin < 1
-        disp('ERROR: TCP/IP port object not provided.');
-        return;
-    elseif nargin < 2
-        maxTime = defaultRuntime;
-    end
-    try 
-        CreatePort=Robot.CreatePort;
-    catch
-        CreatePort = Robot;
-    end
+    maxV = 0.1;
+    wheel2Center = 0.13;
+    noRobotCount = 0;
+
     global dataStore;
     dataStore = struct('truthPose', [],'odometry', [], 'rsdepth', [], 'bump', [], 'beacon', []);
-    noRobotCount = 0;
-    
-    maxV = 0.2;
-    wheel2Center = 0.13;
     
     % Navigation setup
-    % [dataStore, init_pose] = initialPF(Robot,maxTime);
-    
-    map = load('map1_3credits.mat').map;
     mapBoundary = calcMapBoundary(map);
     robotRadius = 0.2;
-    waypoints = load('map1_3credits.mat').waypoints;
-    goal = waypoints(1, :);
-    % start = init_pose;
-    start = [2.5,1.5, deg2rad(0)];
     [V, E] = RRTwalls(map, mapBoundary, start(1:2), goal, robotRadius);
     waypoints = findPath([], V, E, start, goal);
     gotopt = 1;
@@ -64,7 +45,6 @@ function[dataStore] = navigPF(Robot,maxTime)
     
     % Initialize particle filter (PF) 
     particles = resetPF(start);
-    sigma = 0.5;
     
     fig1 = figure(1);
     % [vertex_plot, edge_plot] = plotRoadmap(V, E, fig1);
@@ -99,6 +79,7 @@ function[dataStore] = navigPF(Robot,maxTime)
         [noRobotCount, dataStore] = readStoreSensorData(Robot, noRobotCount, dataStore);
         delta = dataStore.odometry(end, 2:3)';  % distance moved
         depth = dataStore.rsdepth(end, 2:end)'; % depth reading
+        bump = dataStore.bump(end, 2:end);
         
         % CONTROL FUNCTION (send robot commands)
         % if overhead localization loses the robot for too long, stop it
@@ -109,8 +90,8 @@ function[dataStore] = navigPF(Robot,maxTime)
         
         % truthPose = dataStore.truthPose(end, 2:4);
 
-        [particles, pose] = PF(particles, delta, depth, ...
-                              @integrateOdom1, @depthPredict, map, sensor_pos, n_rs_rays, sigma);
+        [particles, pose] = PF(particles, delta, bump, depth, ...
+                              @integrateOdom1, @depthPredict, map, sensor_pos, n_rs_rays, 0.15, 0.05);
         [fwdVel, angVel, gotopt] = visitWaypoints(waypoints, gotopt, closeEnough, pose, epsilon);
         [cmdV, cmdW] = limitCmds(fwdVel, angVel, maxV, wheel2Center);
         SetFwdVelAngVelCreate(Robot, cmdV, cmdW);
@@ -122,6 +103,8 @@ function[dataStore] = navigPF(Robot,maxTime)
         % pause(0.1);
     end
     
+    final_pose = pose';
+
     % set forward and angular velocity to zero (stop robot) before exiting the function
     SetFwdVelAngVelCreate(Robot, 0, 0);
 

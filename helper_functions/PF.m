@@ -15,7 +15,7 @@
 %   Homework 4
 %   Ivan Huang
 
-function [newParticles, p1] = PF(particles, odometry, depthMea, integrateOdom1, depthPredict, map, sensorOrigin, n_rs_rays, sigma)
+function [newParticles, p1] = PF(particles, odometry, bumpMea, depthMea, integrateOdom1, depthPredict, map, sensorOrigin, n_rs_rays, sigma, wallOffset)
 
 addpath("maps\");
 addpath("plotting\");
@@ -28,10 +28,10 @@ addpath("helper_functions\");
     for i = 1:numParticles
         % Step 1: Motion Update (Prediction)
         particles(:, i) = integrateOdom1(particles(:, i), odometry(1), odometry(2));
-
+        
         % Step 2: Measurement Update
         pred_depth = depthPredict(particles(:, i), map, sensorOrigin, linspace(27, -27, n_rs_rays)*pi/180');
-        residual = norm(pred_depth+2*pred_off - depthMea);
+        residual = norm(pred_depth - depthMea);
         error = sum(residual.^2);        
         weights(i) = exp(-error / (2 * sigma^2));
         if isnan(weights(i)) || isinf(weights(i))
