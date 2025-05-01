@@ -22,7 +22,7 @@ function [dataStore] = finalCompetition(Robot,maxTime)
         wallCenters(i,:) = wallCenters(i,:) + [min(optWalls(i,3),optWalls(i,1)), min(optWalls(i,4),optWalls(i,2))];
     end
     %sort points and walls R->L by center of the wall
-    [wallCenters, idx] = sortrows(wallCenters, 'ascend');
+    [wallCenters, idx] = sortrows(wallCenters, 'descend');
     optWalls = optWalls(idx,:);
 
     padding = 0.2;
@@ -76,45 +76,62 @@ function [dataStore] = finalCompetition(Robot,maxTime)
 
     SetFwdVelAngVelCreate(Robot, 0,0);
     tic
-    
+
     SetLEDsRoomba(Robot, 3, 0, 100); % LED green
-    % go to regular waypoints
-    while goal_count <= length(waypoints)
-        goal = waypoints(goal_count, :);
-        [dataStore, truthPose] = navigPF(Robot,maxTime, map, truthPose, goal, dataStore, waypoints, ECwaypoints);
-        goal_count = goal_count+1;
-        SetLEDsRoomba(Robot, 3, 100, 100); % LED green
-        pause(0.5);
-        SetLEDsRoomba(Robot, 3, 0, 100); % LED green
-        % if waypoint has already been visited, skip it
-        if goal_count < length(waypoints) && ismember(waypoints(goal_count, :), dataStore.visitedWP, 'rows')
-            goal_count = goal_count + 1;
+    % % go to regular waypoints
+    % while goal_count <= length(waypoints)
+    %     goal = waypoints(goal_count, :);
+    %     [dataStore, truthPose] = navigPF(Robot,maxTime, map, truthPose, goal, dataStore, waypoints, ECwaypoints, 0.05);
+    %     goal_count = goal_count+1;
+    %     SetLEDsRoomba(Robot, 3, 100, 100); % LED green
+    %     pause(0.5);
+    %     SetLEDsRoomba(Robot, 3, 0, 100); % LED green
+    %     % if waypoint has already been visited, skip it
+    %     if goal_count < length(waypoints) && ismember(waypoints(goal_count, :), dataStore.visitedWP, 'rows')
+    %         goal_count = goal_count + 1;
+    %     end
+    % end
+
+    % go to optional walls
+    goal_count = 1;
+    while goal_count <= size(wallCenters, 1)
+        % Move to the nearest waypoint for better path planning
+        dists = sqrt(sum((waypoints - truthPose(1:2)).^2, 2));
+        if (goal_count == 1)  % if robot at last wp
+            % to not select itself
+            dists(ismember(waypoints, dataStore.visitedWP(end, :), 'rows')) = Inf;
         end
+        % Find index of the minimum distance
+        [~, idx] = min(dists);
+        goal = waypoints(idx, :);
+        [dataStore, truthPose] = navigPF(Robot,maxTime, map, truthPose, goal, dataStore, waypoints, ECwaypoints, 0.05);
+        pause(0.5);
+        goal = wallCenters(goal_count, :);
+        [dataStore, truthPose, map, present] = goToWalls(Robot,maxTime, map, truthPose, goal, optWalls, wallCenters, dataStore);
+        dataStore.wallStates(goal_count) = present;
+        goal_count = goal_count+1;
     end
 
     % go to extra credit waypoints
     goal_count = 1;
     while goal_count <= length(ECwaypoints)
-        goal = ECwaypoints(goal_count, :);
-        [dataStore, truthPose] = navigPF(Robot,maxTime, map, truthPose, goal, dataStore, waypoints, ECwaypoints);
+        % Move to the nearest waypoint for better path planning
+        dists = sqrt(sum((waypoints - truthPose(1:2)).^2, 2));
+        % Find index of the minimum distance
+        [~, idx] = min(dists);
+        goal = waypoints(idx, :);
+        [dataStore, truthPose] = navigPF(Robot,maxTime, map, truthPose, goal, dataStore, waypoints, ECwaypoints, 0.05);
         pause(0.5);
+        goal = ECwaypoints(goal_count, :);
+        [dataStore, truthPose] = navigPF(Robot,maxTime, map, truthPose, goal, dataStore, waypoints, ECwaypoints, 0.05);
         goal_count = goal_count+1;
         SetLEDsRoomba(Robot, 3, 100, 100); % LED green
         pause(0.5);
         SetLEDsRoomba(Robot, 3, 0, 100); % LED green
-        %if waypoint has already been visited, skip it
+        % if waypoint has already been visited, skip it
         if goal_count < length(ECwaypoints) && ismember(ECwaypoints(goal_count, :), dataStore.visitedWP, 'rows')
             goal_count = goal_count + 1;
         end
-    end
-
-    % go to optional walls
-    goal_count = 1;
-    while goal_count <= size(wallCenters, 1)
-        goal = wallCenters(goal_count, :);
-        [dataStore, truthPose, map, present] = goToWalls(Robot,maxTime, map, truthPose, goal, optWalls, wallCenters, dataStore);
-        dataStore.wallStates(goal_count) = present;
-        goal_count = goal_count+1;
     end
 
     %plot map with optional walls, visited waypoints

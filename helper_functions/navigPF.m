@@ -1,4 +1,4 @@
-function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal, dataStore, wps, ECwaypoints)
+function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal, dataStore, wps, ECwaypoints, stepSize)
     
     defaultRuntime = 1000;
     
@@ -13,7 +13,7 @@ function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal, data
     % Navigation setup
     mapBoundary = calcMapBoundary(map);
     robotRadius = 0.2;
-    [V, E] = RRTwalls(map, mapBoundary, start(1:2), goal, robotRadius, 0.05);
+    [V, E] = RRTwalls(map, mapBoundary, start(1:2), goal, robotRadius, stepSize);
     waypoints = findPath([], V, E, start, goal);
     gotopt = 1;
     epsilon = 0.2;
