@@ -1,4 +1,4 @@
-function [dataStore, init_pose] = initialPF(Robot,maxTime, mapFile)
+function [dataStore, init_pose] = initialPF(Robot,maxTime, mapFile, dataStore)
 % rrtPlanner
 % 
 %   dataStore = TURNINPLACE(Robot,maxTime) runs 
@@ -67,8 +67,7 @@ try
 catch
     CreatePort = Robot;
 end
-global dataStore;
-dataStore = struct('truthPose', [],'odometry', [],'rsdepth', [],'bump', [],'beacon', []);
+
 noRobotCount = 0;
 maxV = 0.2;
 wheel2Center = 0.13;
@@ -78,11 +77,11 @@ tic
 particles = startPF(waypoints);
 
 count = 0;
-while toc < maxTime && count < 19
+while toc < maxTime && count < 20
     pause(0.1);
     % turn 360 degree
-    if (count < 19)
-        turnAngle(Robot, robotRadius, 11.65);
+    if (count < 20)
+        turnAngle(Robot, robotRadius, 11.8);
         count = count + 1;
     end
 

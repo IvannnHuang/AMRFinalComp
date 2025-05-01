@@ -1,10 +1,10 @@
-function [V, E] = RRTwalls(walls, mapBoundary, start, goal, robotRadius)
+function [V, E] = RRTwalls(walls, mapBoundary, start, goal, robotRadius, stepSize)
 maxNodes = 1000;
 xmin = mapBoundary(1) + robotRadius;
 ymin = mapBoundary(2) + robotRadius;
 xmax = mapBoundary(3) - robotRadius;
 ymax = mapBoundary(4) - robotRadius;
-stepSize = max(xmax - xmin, ymax - ymin) * 0.1;
+stepSize = max(xmax - xmin, ymax - ymin) * stepSize;
 goalThreshold = stepSize;
 
 V = start;

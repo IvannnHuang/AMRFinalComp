@@ -1,23 +1,23 @@
-function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal)
-% rrtPlanner
+function [dataStore, final_pose] = goToWalls(Robot,maxTime, map, start, goal)
 % 
-%   dataStore = TURNINPLACE(Robot,maxTime) runs 
+%   dataStore = goToWalls(Robot,maxTime, map, start, goal) 
 % 
-%   INPUTStype
+%   INPUTS
 %       Robot       Port configurations and robot name (get from running CreatePiInit)
 %       maxTime     max time to run program (in seconds)
 % 
 %   OUTPUTS
 %       dataStore   struct containing logged data
+%       final_pose  last position of robot
 
 % 
 %   NOTE: Assume differential-drive robot whose wheels turn at a constant 
 %         rate between sensor readings.
 % 
 %   Cornell University
-%   MAE 5180: Autonomous Mobile Robots
-%   Homework #6
-%   Huang, Ivan
+%   MAE 4180: Autonomous Mobile Robots
+%   Final Competition
+%   Natalie Kaplan
     
     defaultRuntime = 1000;
     
@@ -73,6 +73,9 @@ function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal)
     SetFwdVelAngVelCreate(Robot, 0,0);
     tic
     
+    %at this distance away from the wall, start tracking the bump
+    %sensor
+    closeToWall = 0.3;
     while toc < maxTime && gotopt <= length(waypoints)
         
         % READ & STORE SENSOR DATA
@@ -95,6 +98,37 @@ function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal)
         [fwdVel, angVel, gotopt] = visitWaypoints(waypoints, gotopt, closeEnough, pose, epsilon);
         [cmdV, cmdW] = limitCmds(fwdVel, angVel, maxV, wheel2Center);
         SetFwdVelAngVelCreate(Robot, cmdV, cmdW);
+
+        %if robot is close to wall, track the bump sensor. 
+        % If the bump sensor activates, the robot hit the optional wall
+        %and therefore it is there. If the robot arrives at the waypoint (gets
+        %closeEnough distance away) without activating the bump sensor, there
+        %is no wall.
+        if sqrt((dataStore.truthPose(end,2)-dataStore.path(gotopt,1))^2+...
+                (dataStore.truthPose(end,3)-dataStore.path(gotopt,2))^2) <= closeEnough
+            if any(bump)
+                
+                gotopt=gotopt+1;
+                if gotopt > length(dataStore.path)
+                    SetFwdVelAngVelCreate(Robot, 0,0 );
+                    break
+                end
+            end
+        end
+            px = pose(1);
+    py = pose(2);
+    theta = pose(3);
+    goalX = waypoints(gotopt, 1);
+    goalY = waypoints(gotopt, 2);
+    vx = goalX - px;
+    vy = goalY - py;
+    if sqrt(vx^2 + vy^2) > closeEnough
+        [v, w] = feedbackLin(vx, vy, theta, epsilon);
+    else
+        v = 0;
+        w = 0;
+        gotopt = gotopt + 1;
+    end
         
         [px, py, ~] = OverheadLocalizationCreate(Robot);
         set(traj_Plot, 'XData', [get(traj_Plot, 'XData'), px], 'YData', [get(traj_Plot, 'YData'), py]);
