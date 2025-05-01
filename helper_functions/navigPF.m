@@ -1,4 +1,4 @@
-function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal, dataStore, wps, ECwaypoints, stepSize)
+function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal, optWalls, dataStore, wps, ECwaypoints, stepSize)
     
     defaultRuntime = 1000;
     
@@ -37,7 +37,6 @@ function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal, data
     title('RRT');
 
     fig2 = figure(2);
-    cla;
     hold on;
     for i = 1:size(map, 1)
         if ~all(isnan(map(i,:))) && ~all(map(i,:) == 0)
@@ -49,10 +48,19 @@ function [dataStore, final_pose] = navigPF(Robot,maxTime, map, start, goal, data
     grid on;
     
     traj_Plot = plot(nan, nan, 'r-', 'LineWidth', 1.5);
-    pf_Plot = plot(nan, nan, 'b-', 'LineWidth', 1.5);
+    pf_Plot = plot(nan, nan, 'b-', 'LineWidth', 1);
     goal_plot = scatter(goal(1), goal(2), 'gx', 'LineWidth', 2);
     start_plot = scatter(start(1), start(2), 'rx', 'LineWidth', 2);
     wp_plot = scatter(dataStore.visitedWP(:, 1), dataStore.visitedWP(:, 2), 'bx', 'LineWidth', 2);
+    for i = 1:size(optWalls,1)
+        if dataStore.wallStates(i) == -1
+            plot([optWalls(i,1),optWalls(i,3)], [optWalls(i,2), optWalls(i,4)], 'r');
+        %walls determined to be present are drawn in black
+        % elseif dataStore.wallStates(i) == 1
+        %     plot([optWalls(i,1),optWalls(i,3)], [optWalls(i,2), optWalls(i,4)], 'k');
+        end
+        %walls determined to not exist are not drawn
+    end
     
     xlabel('x (inertial)');
     ylabel('y (inertial)');

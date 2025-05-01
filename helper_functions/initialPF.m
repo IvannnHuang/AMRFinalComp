@@ -51,8 +51,8 @@ particle_Plot = scatter(nan, nan, 50, 'r.');  % tiny red dots
 xlabel('x (inertial)');
 ylabel('y (inertial)');
 title('plot of trajectory');
-legend([walls_plot, traj_Plot, pf_Plot, particle_Plot], ...
-    {'walls', 'trajectory', 'most weight', 'particles'});
+% legend([walls_plot, traj_Plot, pf_Plot, particle_Plot], ...
+%     {'walls', 'trajectory', 'most weight', 'particles'});
 axis equal;
 
 % Robot setup
