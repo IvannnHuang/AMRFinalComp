@@ -76,20 +76,21 @@ function [dataStore] = finalCompetition(Robot,maxTime)
 
     SetFwdVelAngVelCreate(Robot, 0,0);
     tic
+    
     SetLEDsRoomba(Robot, 3, 0, 100); % LED green
     % go to regular waypoints
-    % while goal_count <= length(waypoints)
-    %     goal = waypoints(goal_count, :);
-    %     [dataStore, truthPose] = navigPF(Robot,maxTime, map, truthPose, goal, dataStore, waypoints, ECwaypoints);
-    %     goal_count = goal_count+1;
-    %     SetLEDsRoomba(Robot, 3, 100, 100); % LED green
-    %     pause(0.5);
-    %     SetLEDsRoomba(Robot, 3, 0, 100); % LED green
-    %     % if waypoint has already been visited, skip it
-    %     if goal_count < length(waypoints) && ismember(waypoints(goal_count, :), dataStore.visitedWP, 'rows')
-    %         goal_count = goal_count + 1;
-    %     end
-    % end
+    while goal_count <= length(waypoints)
+        goal = waypoints(goal_count, :);
+        [dataStore, truthPose] = navigPF(Robot,maxTime, map, truthPose, goal, dataStore, waypoints, ECwaypoints);
+        goal_count = goal_count+1;
+        SetLEDsRoomba(Robot, 3, 100, 100); % LED green
+        pause(0.5);
+        SetLEDsRoomba(Robot, 3, 0, 100); % LED green
+        % if waypoint has already been visited, skip it
+        if goal_count < length(waypoints) && ismember(waypoints(goal_count, :), dataStore.visitedWP, 'rows')
+            goal_count = goal_count + 1;
+        end
+    end
 
     % go to extra credit waypoints
     goal_count = 1;
