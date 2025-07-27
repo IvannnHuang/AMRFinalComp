@@ -21,11 +21,17 @@ This project was developed for the **ECE4180 Final Competition** at Cornell Univ
 - **Accurate Localization**  
   PF tracked robot pose with ±0.1 m accuracy during turns and linear motion.
 
+<img src="img/initialPF.png" alt="Simulation Run" width="300"/>
+
 - **Hybrid Navigation Strategy**  
   RRT generated global paths; Dijkstra selected the optimal route to each waypoint.
 
+<img src="img/RRT.png" alt="Simulation Run" width="400"/>
+
 - **Modular Real-Time Control**  
   Robot continuously re-planned paths and updated belief states during runtime.
+
+<img src="img/path.png" alt="Simulation Run" width="300"/>
 
 - **Obstacle Detection & Map Update**  
   Optional walls were added to the map dynamically based on bump sensor readings.
