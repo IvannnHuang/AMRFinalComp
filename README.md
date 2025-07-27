@@ -44,8 +44,3 @@ This project was developed for the **ECE4180 Final Competition** at Cornell Univ
 ## Competition Result
 
 While the robot performed robustly and accurately in simulation and physical tests, strict speed and time limits in the final run prevented reaching all waypoints. Nevertheless, the system showed strong localization, navigation, and adaptability, making it an excellent showcase of embedded robotics and systems engineering.
-
----
-
-## Repository Structure 
-
