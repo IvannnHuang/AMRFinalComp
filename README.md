@@ -1,4 +1,5 @@
 # Autonomous Robot Localization and Navigation System
+> Final Project for ECE4180 — MATLAB-based simulation and real-time control system
 
 This project was developed for the **ECE4180 Final Competition** at Cornell University. Our robot autonomously localized itself from an unknown starting point, planned collision-free paths using global planning algorithms, and navigated through a mapped environment while detecting obstacles in real time.
 
